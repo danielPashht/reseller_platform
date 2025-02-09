@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class Item(Base):
+class ItemModel(Base):
     __tablename__ = 'item'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100))
@@ -13,10 +13,10 @@ class Item(Base):
     image = Column(String(255), nullable=True)
     price = Column(Float, nullable=False)
 
-    order_items = relationship("OrderItem", back_populates="item")
+    order_items = relationship("OrderItemModel", back_populates="item")
 
 
-class Order(Base):
+class OrderModel(Base):
     __tablename__ = 'order'
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, nullable=False)
@@ -24,16 +24,15 @@ class Order(Base):
     total = Column(Float, nullable=False)
     status = Column(String, default="created", nullable=False)
 
-    order_items = relationship("OrderItem", back_populates="order")
+    order_items = relationship("OrderItemModel", back_populates="order")
 
 
-class OrderItem(Base):
+class OrderItemModel(Base):
     __tablename__ = 'order_item'
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey('order.id'), nullable=False)
     item_id = Column(Integer, ForeignKey('item.id'), nullable=False)
     quantity = Column(Integer, default=1)
 
-    # Relationships
-    order = relationship("Order", back_populates="order_items")
-    item = relationship("Item", back_populates="order_items")
+    order = relationship("OrderModel", back_populates="order_items")
+    item = relationship("ItemModel", back_populates="order_items")
