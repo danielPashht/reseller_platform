@@ -7,7 +7,6 @@ class ItemSchema(BaseModel):
     id: int | None = None
     name: str
     description: str
-    image: str
     price: float
 
 
