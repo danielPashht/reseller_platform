@@ -1,16 +1,26 @@
+import os
 from contextlib import asynccontextmanager
 from sqlalchemy import text
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Header, HTTPException
 from sqladmin import Admin
 
 from admin_views import ItemAdmin, OrderAdmin
 from models import Base, OrderModel, OrderItemModel
 from schemas import OrderItemSchema, OrderSchema
+from dotenv import load_dotenv
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
+load_dotenv()
+
 # --- Database --- #
-DATABASE_URL = "postgresql+asyncpg://postgres:946815@localhost:5432/tg_shop"
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
 engine = create_async_engine(DATABASE_URL, echo=True)
 SessionLocal = async_sessionmaker(
     bind=engine,
@@ -24,7 +34,6 @@ async def get_session():
         yield session
 
 
-# --- FastAPI app --- #
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
@@ -41,11 +50,20 @@ admin.add_view(ItemAdmin)
 admin.add_view(OrderAdmin)
 
 
+SECRET_API_KEY = os.getenv("TG_SECRET")
+
+
+async def verify_api_key(x_api_key: str = Header(...)):
+    if x_api_key != SECRET_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    return x_api_key
+
+
 # --- Views --- #
 @app.post("/orders/")
 async def create_order(
         order_data: OrderSchema,
-        session: AsyncSession = Depends(get_session)
+        session: AsyncSession = Depends(get_session),
 ):
     order_data_dict = order_data.model_dump()
     order_data_dict.pop('order_items', None)
@@ -63,6 +81,14 @@ async def create_order(
     await session.refresh(new_order)
 
     return new_order
+
+
+@app.get("/items/", dependencies=[Depends(verify_api_key)])
+async def get_items(session: AsyncSession = Depends(get_session)):
+    query = text("SELECT * FROM item")
+    result = await session.execute(query)
+    items = result.scalars().all()
+    return list(items)
 
 if __name__ == "__main__":
     import uvicorn
