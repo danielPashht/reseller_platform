@@ -1,8 +1,13 @@
+import json
+from typing import Any
+from config import rabbit_channel
+
 from sqladmin import ModelView
+from starlette.requests import Request
+
 from models import ItemModel, OrderModel
 
 
-# ----------------- Admin views ----------------- #
 class OrderAdmin(ModelView, model=OrderModel):
 	is_async = True
 	name_plural = "Orders"
@@ -20,3 +25,19 @@ class ItemAdmin(ModelView, model=ItemModel):
 	column_list = [ItemModel.id, ItemModel.name, ItemModel.description, ItemModel.price]
 	column_searchable_list = [ItemModel.name]
 	column_filters = [ItemModel.name]
+
+	async def after_model_change(
+			self, data: dict, model: Any,
+			is_created: bool, request: Request) -> None:
+		""" Publish item updates to RabbitMQ """
+		message = {
+			'id': model.id,
+			'name': model.name,
+			'description': model.description,
+			'price': model.price
+		}
+		rabbit_channel.basic_publish(
+			exchange='reseller_exchange',
+			routing_key='item_updates',
+			body=json.dumps(message)
+		)
