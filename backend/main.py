@@ -6,7 +6,7 @@ from fastapi import FastAPI, Depends, Header, HTTPException, middleware
 from sqladmin import Admin
 
 from admin_views import ItemAdmin, OrderAdmin
-from models import Base, OrderModel, OrderItemModel
+from models import Base, OrderModel, OrderItemModel, ItemModel
 from config import (
     DB_USER,
     DB_PASSWORD,
@@ -30,6 +30,11 @@ SessionLocal = async_sessionmaker(
 )
 
 
+def load_items_from_json(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return json.load(file)
+
+
 async def get_session():
     async with SessionLocal() as session:
         yield session
@@ -39,6 +44,17 @@ async def get_session():
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+
+        # Load items from JSON file
+        items = load_items_from_json('items.json')
+
+        # Insert items into the database
+        async with SessionLocal() as session:
+            for item in items:
+                new_item = ItemModel(**item)
+                session.add(new_item)
+            await session.commit()
+
     yield
     await engine.dispose()
 
@@ -98,8 +114,8 @@ def callback(ch, method, properties, body):
 
             await session.commit()
             await session.refresh(new_order)
-            # TODO: notify admin
-            # TODO: update order status in Telegram
+        # TODO: notify admin
+        # TODO: send update for order status in Telegram
 
     asyncio.create_task(process_order())
 
@@ -115,6 +131,8 @@ async def get_items(session: AsyncSession = Depends(get_session)):
     items = result.scalars().all()
     return list(items)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8008, reload=True)
