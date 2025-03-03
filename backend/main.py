@@ -1,27 +1,28 @@
-import os
+import asyncio
+import json
 from contextlib import asynccontextmanager
 from sqlalchemy import text
-from fastapi import FastAPI, Depends, Header, HTTPException
+from fastapi import FastAPI, Depends, Header, HTTPException, middleware
 from sqladmin import Admin
 
 from admin_views import ItemAdmin, OrderAdmin
 from models import Base, OrderModel, OrderItemModel
-from schemas import OrderItemSchema, OrderSchema
-from dotenv import load_dotenv
+from config import (
+    DB_USER,
+    DB_PASSWORD,
+    DB_HOST,
+    DB_PORT,
+    DB_NAME,
+    TG_SECRET,
+    get_db_url,
+    rabbit_channel
+)
+from schemas import OrderSchema
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
-load_dotenv()
 
-# --- Database --- #
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(get_db_url(), echo=True)
 SessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -50,16 +51,12 @@ admin.add_view(ItemAdmin)
 admin.add_view(OrderAdmin)
 
 
-SECRET_API_KEY = os.getenv("TG_SECRET")
-
-
 async def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key != SECRET_API_KEY:
+    if x_api_key != TG_SECRET:
         raise HTTPException(status_code=403, detail="Invalid API key")
     return x_api_key
 
 
-# --- Views --- #
 @app.post("/orders/")
 async def create_order(
         order_data: OrderSchema,
@@ -81,6 +78,34 @@ async def create_order(
     await session.refresh(new_order)
 
     return new_order
+
+
+def callback(ch, method, properties, body):
+    """ Process consumed order message """
+    message = json.loads(body)
+    order_data = message.get('order_data')
+    order_items = message.get('order_items')
+
+    async def process_order():
+        async with SessionLocal() as session:
+            new_order = OrderModel(**order_data)
+            session.add(new_order)
+            await session.flush()
+
+            for item in order_items:
+                order_item = OrderItemModel(order_id=new_order.id, item_id=item['item_id'], quantity=item['quantity'])
+                session.add(order_item)
+
+            await session.commit()
+            await session.refresh(new_order)
+            # TODO: notify admin
+            # TODO: update order status in Telegram
+
+    asyncio.create_task(process_order())
+
+
+rabbit_channel.basic_consume(queue="order_queue", on_message_callback=callback, auto_ack=True)
+rabbit_channel.start_consuming()
 
 
 @app.get("/items/", dependencies=[Depends(verify_api_key)])

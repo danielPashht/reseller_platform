@@ -1,0 +1,59 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="4">
+            <item index="0" class="java.lang.String" itemvalue="pandas" />
+            <item index="1" class="java.lang.String" itemvalue="matplotlib" />
+            <item index="2" class="java.lang.String" itemvalue="gunicorn" />
+            <item index="3" class="java.lang.String" itemvalue="openpyxl" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="VulnerableLibrariesLocal" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="isIgnoringEnabled" value="true" />
+      <option name="ignoredModules">
+        <list>
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+          <option value="ui-test" />
+        </list>
+      </option>
+      <option name="ignoredPackages">
+        <list>
+          <option value="null:requests:2.28.1" />
+          <option value="null:urllib3:1.26.12" />
+          <option value="null:setuptools:65.3.0" />
+          <option value="null:wheel:0.37.1" />
+          <option value="null:certifi:2022.6.15" />
+          <option value="null:ipython:8.4.0" />
+          <option value="null:Pillow:9.2.0" />
+          <option value="null:py:1.11.0" />
+          <option value="null:Pygments:2.13.0" />
+        </list>
+      </option>
+      <option name="ignoredReasons">
+        <list>
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
