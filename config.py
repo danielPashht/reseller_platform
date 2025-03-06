@@ -15,7 +15,7 @@ RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
 
 
 def get_db_url():
-	db_host = 'reseller_postgresql'  # os.getenv("DB_HOST", "localhost")
+	db_host = os.getenv("DB_HOST", "localhost")
 	db_port = os.getenv("DB_PORT", 5432)
 	db_user = os.getenv("DB_USER", "postgres")
 	db_password = os.getenv("DB_PASSWORD", "postgres")
