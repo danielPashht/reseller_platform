@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: reseller_postgresql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 946815
+      POSTGRES_DB: reseller
+    volumes:
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    healthcheck:
+        test: ["CMD", "pg_isready", "-U", "postgres"]
+        interval: 10s
+        timeout: 5s
+        retries: 3
+    ports:
+      - "5432:5432"
+    networks:
+      - reseller_network
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: reseller_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - reseller_network
+
+  app:
+    build: .
+    container_name: reseller_backend
+    environment:
+      - RABBITMQ_HOST=reseller_rabbitmq
+      - DB_HOST=reseller_postgresql
+      - DB_USER=postgres
+      - DB_PASSWORD=946815
+      - DB_PORT=5432
+      - DB_NAME=reseller
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      - reseller_network
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/items/"]
+        interval: 10s
+        timeout: 5s
+        retries: 3
+
+  bot:
+    build:
+      context: /Users/daniel/Documents/code/aiogram_bot
+      dockerfile: Dockerfile
+    container_name: reseller_bot
+    environment:
+      - RABBITMQ_HOST=reseller_rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    networks:
+      - reseller_network
+
+networks:
+  reseller_network:
+    driver: bridge
