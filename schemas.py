@@ -9,6 +9,10 @@ class ItemSchema(BaseModel):
     description: str
     price: float
 
+    class Config:
+        from_attributes = True
+        orm_mode = True
+
 
 class OrderItemSchema(BaseModel):
     id: int | None = None
