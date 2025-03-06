@@ -22,7 +22,7 @@ A lightweight Telegram bot for order processing using Aiogram, FastAPI, Celery, 
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/your-repo/shop_bot.git
-cd shop_bot
+cd reseller_backend
 ```
 
 ### 2. Set Up Environment Variables
