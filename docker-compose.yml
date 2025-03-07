@@ -8,15 +8,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 946815
       POSTGRES_DB: reseller
+      POSTGRES_PORT: 5432
     volumes:
       - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     healthcheck:
-        test: ["CMD", "pg_isready", "-U", "postgres"]
-        interval: 10s
-        timeout: 5s
-        retries: 3
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - reseller_network
 
@@ -27,10 +28,23 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI port
     healthcheck:
-      test: [ "CMD", "rabbitmqctl", "status" ]
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - reseller_network
+
+  redis:
+    image: redis:latest
+    container_name: reseller_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -41,13 +55,13 @@ services:
     build: .
     container_name: reseller_backend
     environment:
-      - RABBITMQ_HOST=reseller_rabbitmq
-      - DB_HOST=reseller_postgresql
-      - DB_USER=postgres
-      - DB_PASSWORD=946815
-      - DB_PORT=5432
-      - DB_NAME=reseller
-
+      RABBITMQ_HOST: reseller_rabbitmq
+      RABBITMQ_PORT: 5672
+      DB_HOST: reseller_postgresql
+      DB_USER: postgres
+      DB_PASSWORD: 946815
+      DB_PORT: 5432
+      DB_NAME: reseller
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -58,10 +72,10 @@ services:
     networks:
       - reseller_network
     healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:8080/items/"]
-        interval: 10s
-        timeout: 5s
-        retries: 3
+      test: ["CMD", "curl", "-f", "http://reseller_backend:8080/items/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   bot:
     build:
@@ -69,13 +83,17 @@ services:
       dockerfile: Dockerfile
     container_name: reseller_bot
     environment:
-      - RABBITMQ_HOST=reseller_rabbitmq
+      RABBITMQ_HOST: reseller_rabbitmq
+      RABBITMQ_PORT: 5672
+      REDIS_HOST: reseller_redis
     depends_on:
       rabbitmq:
         condition: service_healthy
       postgres:
         condition: service_healthy
       app:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - reseller_network
