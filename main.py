@@ -1,19 +1,26 @@
 import asyncio
 import json
 import logging
+import random
 import threading
 from contextlib import asynccontextmanager
-import random
+from typing import AsyncGenerator
 
-from sqlalchemy import text
-from fastapi import FastAPI, Depends, Header, HTTPException
+from fastapi import FastAPI
+from fastapi import Header, Depends
+from fastapi.exceptions import HTTPException
 from sqladmin import Admin
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from models import Base, OrderModel, OrderItemModel, ItemModel
+from models import Base, ItemModel, OrderItemModel, OrderModel
 import config
-from schemas import ItemSchema, OrderSchema
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from schemas import ItemSchema
 
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("reseller")
 
 engine = create_async_engine(config.get_db_url(), echo=True)
 SessionLocal = async_sessionmaker(
@@ -23,16 +30,40 @@ SessionLocal = async_sessionmaker(
 )
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("reseller")
+async def create_tables():
+    """
+    Creates database tables.
+    This function is run before starting to serve requests.
+    """
+    async with engine.begin() as conn:
+        try:
+            _logger = logging.getLogger("sqlalchemy.engine")
+            _logger.setLevel(logging.DEBUG)
+            await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+            logger.info("DB tables created")
+        except SQLAlchemyError as e:
+            logger.error(f"Error creating tables: {e}")
+            raise
 
 
-def load_items_from_json(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return json.load(file)
+async def seed_data():
+    """
+    Seeds the database with initial data.
+    This function is run after table creation.
+    """
+    items = generate_items()
+    async with SessionLocal() as session:
+        for item in items:
+            new_item = ItemModel(**item)
+            await session.merge(new_item)
+        await session.commit()
+    logger.info("DB seeded")
 
 
-async def get_session():
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency for getting an async session.
+    """
     async with SessionLocal() as session:
         yield session
 
@@ -51,17 +82,11 @@ def generate_items(num_items=10):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all, checkfirst=True)
-        logger.info("DB tables created")
-        # if not (await conn.execute(text("SELECT 1 FROM item")).fetchone()):
-        #     items = generate_items()
-        #     async with SessionLocal() as session:
-        #         for item in items:
-        #             new_item = ItemModel(**item)
-        #             session.add(new_item)
-        #         await session.commit()
-        #         logger.info("Initial items loaded to DB")
+    """
+    Manages the startup and shutdown of the application.
+    """
+    await create_tables()
+    await seed_data()
 
     yield
     await engine.dispose()
@@ -119,10 +144,9 @@ def startup_event():
 
 @app.get("/items/", dependencies=[Depends(verify_api_key)])
 async def get_items(session: AsyncSession = Depends(get_session)):
-    query = text("SELECT * FROM item")
-    result = await session.execute(query)
+    result = await session.execute(select(ItemModel))
     items = result.fetchall()
-    return [ItemSchema.from_orm(item) for item in items]
+    return [ItemSchema.model_validate(item[0]) for item in items]
 
 
 if __name__ == "__main__":
