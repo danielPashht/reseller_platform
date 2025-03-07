@@ -16,7 +16,7 @@ class OrderModel(Base):
 
 class ItemModel(Base):
     __tablename__ = 'item'
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=True)
     price = Column(Float, nullable=False)

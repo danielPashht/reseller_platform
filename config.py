@@ -39,7 +39,7 @@ def setup_rabbitmq():
 	_connection = get_rabbit_connection()
 	_channel = _connection.channel()
 	_channel.exchange_declare(exchange='reseller_exchange', exchange_type='direct')
-	_channel.queue_declare(queue='order_queue')
+	_channel.queue_declare(queue='order_queue', durable=True)
 	_channel.queue_declare(queue='item_queue')
 	_channel.queue_bind(queue='order_queue', exchange='reseller_exchange', routing_key='order_updates')
 	_channel.queue_bind(queue='item_queue', exchange='reseller_exchange', routing_key='item_updates')
