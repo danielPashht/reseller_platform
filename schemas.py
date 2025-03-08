@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ItemSchema(BaseModel):
     id: int | None = None
     name: str
-    description: str
+    description: str | None = None
     price: float
 
     class Config:
@@ -15,14 +15,18 @@ class ItemSchema(BaseModel):
 
 class OrderItemSchema(BaseModel):
     id: int | None = None
+    order_id: int
     item_id: int
-    quantity: int
+
+    class Config:
+        from_attributes = True
 
 
 class OrderSchema(BaseModel):
     id: int | None = None
-    username: str
-    user_telegram_id: int
+    user_id: int
+    total_price: float
     order_items: List[OrderItemSchema]
-    total: float
-    status: str = "created"
+
+    class Config:
+        from_attributes = True
