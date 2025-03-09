@@ -5,6 +5,7 @@ import random
 import threading
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, List
+from tools.helpers import generate_items
 
 from fastapi import FastAPI
 from fastapi import Header, Depends, Response
@@ -66,18 +67,6 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     async with SessionLocal() as session:
         yield session
-
-
-def generate_items(num_items=10):
-    items = []
-    for i in range(num_items):
-        item = {
-            "name": f"Item {i+1}",
-            "description": f"Description for item {i+1}",
-            "price": round(random.uniform(10.0, 100.0), 2)
-        }
-        items.append(item)
-    return items
 
 
 @asynccontextmanager
