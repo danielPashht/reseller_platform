@@ -4,17 +4,17 @@ import logging
 import random
 import threading
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict, List
 
 from fastapi import FastAPI
-from fastapi import Header, Depends
+from fastapi import Header, Depends, Response
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from models import Base, ItemModel, OrderItemModel, OrderModel
+from models import Base, OrderItemModel, OrderModel, ItemModel
 import config
 from schemas import ItemSchema
 
@@ -103,43 +103,43 @@ async def verify_api_key(x_api_key: str = Header(...)):
     return x_api_key
 
 
-def callback(ch, method, properties, body):
-    """ Process consumed order message """
-    message = json.loads(body)
-    order_data = message.get('order_data')
-    order_items = message.get('order_items')
+# def callback(ch, method, properties, body):
+#     """ Process consumed order message """
+#     message = json.loads(body)
+#     order_data = message.get('order_data')
+#     order_items = message.get('order_items')
+#
+#     async def process_order():
+#         async with SessionLocal() as session:
+#             new_order = OrderModel(**order_data)
+#             session.add(new_order)
+#             await session.flush()
+#
+#             for item in order_items:
+#                 order_item = OrderItemModel(
+#                     order_id=new_order.id,
+#                     item_id=item['item_id'],
+#                     quantity=item['quantity']
+#                 )
+#                 session.add(order_item)
+#
+#             await session.commit()
+#             await session.refresh(new_order)
+#         # TODO: notify admin
+#         # TODO: send update for order status in Telegram
 
-    async def process_order():
-        async with SessionLocal() as session:
-            new_order = OrderModel(**order_data)
-            session.add(new_order)
-            await session.flush()
-
-            for item in order_items:
-                order_item = OrderItemModel(
-                    order_id=new_order.id,
-                    item_id=item['item_id'],
-                    quantity=item['quantity']
-                )
-                session.add(order_item)
-
-            await session.commit()
-            await session.refresh(new_order)
-        # TODO: notify admin
-        # TODO: send update for order status in Telegram
-
-    asyncio.create_task(process_order())
-
-
-def start_rabbit_consumer():
-    config.rabbit_channel.basic_consume(queue="order_queue", on_message_callback=callback, auto_ack=True)
-    config.rabbit_channel.start_consuming()
+#    asyncio.create_task(process_order())
 
 
-@app.on_event("startup")
-def startup_event():
-    consumer_thread = threading.Thread(target=start_rabbit_consumer)
-    consumer_thread.start()
+# def start_rabbit_consumer():
+#     config.rabbit_channel.basic_consume(queue="order_queue", on_message_callback=callback, auto_ack=True)
+#     config.rabbit_channel.start_consuming()
+#
+#
+# @app.on_event("startup")
+# def startup_event():
+#     consumer_thread = threading.Thread(target=start_rabbit_consumer)
+#     consumer_thread.start()
 
 
 @app.get("/items/", dependencies=[Depends(verify_api_key)])
@@ -147,6 +147,34 @@ async def get_items(session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(ItemModel))
     items = result.fetchall()
     return [ItemSchema.model_validate(item[0]) for item in items]
+
+
+@app.post("/order/", dependencies=[Depends(verify_api_key)])
+async def create_order(order_data: Dict, session: AsyncSession = Depends(get_session)):
+    # todo: use order schema not dict
+    order_items_data: list = order_data.pop("order_items", [])
+    if not order_items_data:
+        raise HTTPException(status_code=400, detail="Order items are required")
+
+    try:
+        async with session.begin():
+            new_order = OrderModel(**order_data)
+            session.add(new_order)
+            await session.flush()
+
+            for item_data in order_items_data:
+                order_item = OrderItemModel(order_id=new_order.id, **item_data)
+                session.add(order_item)
+
+            await session.flush()
+        await session.refresh(new_order)
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Error saving order data to DB: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error creating order: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error creating order: {str(e)}")
+    logger.info(f"Order created: {new_order}")
+    return Response(status_code=201)
 
 
 if __name__ == "__main__":

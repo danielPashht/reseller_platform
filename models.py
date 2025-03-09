@@ -24,7 +24,7 @@ class ItemModel(Base):
 
 class OrderItemModel(Base):
     __tablename__ = 'order_item'
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     order_id = Column(Integer, ForeignKey('order.id'), nullable=False)
     item_id = Column(Integer, ForeignKey('item.id'), nullable=False)
     order = relationship("OrderModel", back_populates="order_items")
