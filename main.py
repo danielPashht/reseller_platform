@@ -163,7 +163,7 @@ async def create_order(order_data: Dict, session: AsyncSession = Depends(get_ses
             await session.flush()
 
             for item_data in order_items_data:
-                order_item = OrderItemModel(order_id=new_order.id, **item_data)
+                order_item = OrderItemModel(order_id=new_order.id, item_id=item_data["id"])
                 session.add(order_item)
 
             await session.flush()
