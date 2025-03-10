@@ -4,14 +4,15 @@ import logging
 import random
 import threading
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, List
+from typing import Any, AsyncGenerator, Dict, List
 from tools.helpers import generate_items
 
 from fastapi import FastAPI
 from fastapi import Header, Depends, Response
 from fastapi.exceptions import HTTPException
-from sqladmin import Admin
+from sqladmin import Admin, ModelView
 from sqlalchemy import select
+from starlette.requests import Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -83,6 +84,64 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 admin = Admin(app, engine, session_maker=SessionLocal)
+
+
+# Defining Admin views in main file to avoid circular imports
+class OrderAdmin(ModelView, model=OrderModel):
+    is_async = True
+    name_plural = "Orders"
+    can_edit = True
+    can_create = False
+    can_delete = True
+    column_list = [OrderModel.id, OrderModel.user_id, OrderModel.total_price]
+    column_searchable_list = [OrderModel.user_id]
+    column_filters = [OrderModel.user_id]
+
+
+class ItemAdmin(ModelView, model=ItemModel):
+    is_async = True
+    name_plural = "Items"
+    column_list = [ItemModel.id, ItemModel.name, ItemModel.price]
+    column_searchable_list = [ItemModel.name]
+    column_filters = [ItemModel.name]
+
+    async def after_model_change(
+            self, data: dict, model: Any,
+            is_created: bool, request: Request) -> None:
+        """ Publish item updates to RabbitMQ """
+        message = {
+            'id': model.id,
+            'name': model.name,
+            'description': model.description or '',
+            'price': model.price
+        }
+
+        config.rabbit_channel.basic_publish(
+            exchange='reseller_exchange',
+            routing_key='item_updates',
+            body=json.dumps(message)
+        )
+
+    async def after_model_delete(
+            self, model: Any, request: Request) -> None:
+        """ Publish item deletion to RabbitMQ """
+        message = {
+            'id': model.id,
+            'name': model.name,
+            'description': model.description or '',
+            'price': model.price,
+            'deleted': True
+        }
+
+        config.rabbit_channel.basic_publish(
+            exchange='reseller_exchange',
+            routing_key='item_deletes',
+            body=json.dumps(message)
+        )
+
+
+admin.add_view(ItemAdmin)
+admin.add_view(OrderAdmin)
 
 
 # Middleware
@@ -166,6 +225,13 @@ async def create_order(order_data: Dict, session: AsyncSession = Depends(get_ses
     return Response(status_code=201)
 
 
+@app.get("/orders/", dependencies=[Depends(verify_api_key)])
+async def get_orders(session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(OrderModel))
+    orders = result.fetchall()
+    return [order[0] for order in orders]
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_level="debug")
+

@@ -2,7 +2,6 @@ asyncpg==0.30.0
 fastapi==0.115.6
 sqladmin==0.20.1
 sqlalchemy==2.0.37
-sqlmodel==0.0.22
 uvicorn==0.34.0
 pika==1.3.2
 python-dotenv==1.0.1
