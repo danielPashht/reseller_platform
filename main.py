@@ -1,10 +1,8 @@
-import asyncio
 import json
 import logging
-import random
-import threading
+from schemas import OrderSchema
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List
+from typing import Any, AsyncGenerator, Dict
 from tools.helpers import generate_items
 
 from fastapi import FastAPI
@@ -159,25 +157,31 @@ async def get_items(session: AsyncSession = Depends(get_session)):
 
 
 @app.post("/order/", dependencies=[Depends(verify_api_key)])
-async def create_order(order_data: Dict, session: AsyncSession = Depends(get_session)):
-    # todo: use order schema not dict
+async def create_order(order_data: OrderSchema, session: AsyncSession = Depends(get_session)):
     order_items_data: list = order_data.pop("order_items", [])
     if not order_items_data:
         raise HTTPException(status_code=400, detail="Order items are required")
 
     try:
         async with session.begin():
-            new_order = OrderModel(**order_data)
+            new_order = OrderModel(
+                user_id=order_data.user_id,
+                total_price=order_data.total_price
+            )
             session.add(new_order)
             await session.flush()
 
             for item_data in order_items_data:
-                order_item = OrderItemModel(order_id=new_order.id, item_id=item_data["id"])
+                order_item = OrderItemModel(
+                    order_id=new_order.id,
+                    item_id=item_data["id"]
+                )
                 session.add(order_item)
 
             await session.flush()
         await session.refresh(new_order)
         # notify admin
+
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error saving order data to DB: {str(e)}")
     except Exception as e:
