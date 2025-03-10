@@ -151,45 +151,6 @@ async def verify_api_key(x_api_key: str = Header(...)):
     return x_api_key
 
 
-# def callback(ch, method, properties, body):
-#     """ Process consumed order message """
-#     message = json.loads(body)
-#     order_data = message.get('order_data')
-#     order_items = message.get('order_items')
-#
-#     async def process_order():
-#         async with SessionLocal() as session:
-#             new_order = OrderModel(**order_data)
-#             session.add(new_order)
-#             await session.flush()
-#
-#             for item in order_items:
-#                 order_item = OrderItemModel(
-#                     order_id=new_order.id,
-#                     item_id=item['item_id'],
-#                     quantity=item['quantity']
-#                 )
-#                 session.add(order_item)
-#
-#             await session.commit()
-#             await session.refresh(new_order)
-#         # TODO: notify admin
-#         # TODO: send update for order status in Telegram
-
-#    asyncio.create_task(process_order())
-
-
-# def start_rabbit_consumer():
-#     config.rabbit_channel.basic_consume(queue="order_queue", on_message_callback=callback, auto_ack=True)
-#     config.rabbit_channel.start_consuming()
-#
-#
-# @app.on_event("startup")
-# def startup_event():
-#     consumer_thread = threading.Thread(target=start_rabbit_consumer)
-#     consumer_thread.start()
-
-
 @app.get("/items/", dependencies=[Depends(verify_api_key)])
 async def get_items(session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(ItemModel))
@@ -216,6 +177,7 @@ async def create_order(order_data: Dict, session: AsyncSession = Depends(get_ses
 
             await session.flush()
         await session.refresh(new_order)
+        # notify admin
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error saving order data to DB: {str(e)}")
     except Exception as e:
