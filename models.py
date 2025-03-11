@@ -13,7 +13,7 @@ class OrderModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
-    total_price = Column(Integer, nullable=False)
+    total_price = Column(Float, nullable=False)
     order_items = relationship(
         "OrderItemModel",
         back_populates="order",

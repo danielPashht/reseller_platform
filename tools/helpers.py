@@ -12,7 +12,7 @@ def generate_items():
         item = {
             "name": item_data.get("name", ""),
             "description": item_data.get("description", ""),
-            "price": item_data.get("price", 0.0)
+            "price": float(item_data.get("price", 0.0))
         }
         items.append(item)
 
