@@ -1,16 +1,21 @@
+import asyncio
 import json
 import logging
-from schemas import OrderSchema
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict
-from tools.helpers import generate_items
 
-from fastapi import FastAPI
-from fastapi import Header, Depends, Response
+from mailer import send_mail
+from typing import Any, AsyncGenerator, Dict, List, Union
+from tools.helpers import generate_items, decimal_default
+
+from fastapi import (
+    FastAPI, BackgroundTasks,
+    Header, Depends, Response
+)
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin, ModelView
-from sqlalchemy import select
+from sqlalchemy import select, Select
 from starlette.requests import Request
+from sqlalchemy.orm import contains_eager
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -84,16 +89,29 @@ app = FastAPI(lifespan=lifespan)
 admin = Admin(app, engine, session_maker=SessionLocal)
 
 
-# Defining Admin views in main file to avoid circular imports
 class OrderAdmin(ModelView, model=OrderModel):
     is_async = True
     name_plural = "Orders"
     can_edit = True
     can_create = False
     can_delete = True
-    column_list = [OrderModel.id, OrderModel.user_id, OrderModel.total_price]
+    column_list = [
+        OrderModel.id, OrderModel.created_at,
+        OrderModel.user_id
+    ]
     column_searchable_list = [OrderModel.user_id]
     column_filters = [OrderModel.user_id]
+
+    column_details_list = [
+        OrderModel.created_at, OrderModel.user_id, OrderModel.total_price, OrderModel.item_names
+    ]
+
+    column_labels = {
+        OrderModel.created_at: "Created At",
+        OrderModel.item_names: "Items",
+        OrderModel.user_id: "Telegram User ID",
+        OrderModel.total_price: "Total Price",
+    }
 
 
 class ItemAdmin(ModelView, model=ItemModel):
@@ -117,13 +135,14 @@ class ItemAdmin(ModelView, model=ItemModel):
         config.rabbit_channel.basic_publish(
             exchange='reseller_exchange',
             routing_key='item_updates',
-            body=json.dumps(message)
+            body=json.dumps(message, default=decimal_default)
         )
 
     async def after_model_delete(
             self, model: Any, request: Request) -> None:
         """ Publish item deletion to RabbitMQ """
         message = {
+            'channel': 'item_deletes',
             'id': model.id,
             'name': model.name,
             'description': model.description or '',
@@ -157,17 +176,19 @@ async def get_items(session: AsyncSession = Depends(get_session)):
 
 
 @app.post("/order/", dependencies=[Depends(verify_api_key)])
-async def create_order(order_data: OrderSchema, session: AsyncSession = Depends(get_session)):
+async def create_order(
+        order_data: Dict[str, Any],
+        tasks: BackgroundTasks,
+        session: AsyncSession = Depends(get_session)
+):
     order_items_data: list = order_data.pop("order_items", [])
     if not order_items_data:
         raise HTTPException(status_code=400, detail="Order items are required")
 
     try:
         async with session.begin():
-            new_order = OrderModel(
-                user_id=order_data.user_id,
-                total_price=order_data.total_price
-            )
+            new_order = OrderModel(**order_data)
+
             session.add(new_order)
             await session.flush()
 
@@ -180,7 +201,10 @@ async def create_order(order_data: OrderSchema, session: AsyncSession = Depends(
 
             await session.flush()
         await session.refresh(new_order)
-        # notify admin
+
+        # Schedule email sending
+        tasks.add_task(asyncio.create_task, send_mail(new_order.id))
+        logger.info("Email scheduled to be sent")
 
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error saving order data to DB: {str(e)}")
