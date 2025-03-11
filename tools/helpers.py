@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 
 
 def generate_items():
@@ -15,3 +16,9 @@ def generate_items():
         items.append(item)
 
     return items
+
+
+def decimal_default(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError
