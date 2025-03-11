@@ -207,7 +207,7 @@ async def create_order(
         logger.error(f"Error creating order: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error creating order: {str(e)}")
     logger.info(f"Order created: {new_order}")
-    return Response(status_code=201)
+    return Response(status_code=201, content=json.dumps({"order_id": new_order.id}))
 
 
 @app.get("/orders/", dependencies=[Depends(verify_api_key)])
