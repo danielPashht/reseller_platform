@@ -3,7 +3,6 @@ import json
 import logging
 from contextlib import asynccontextmanager
 
-from mailer import send_mail
 from typing import Any, AsyncGenerator, Dict, List, Union
 from tools.helpers import generate_items, decimal_default
 
@@ -201,10 +200,6 @@ async def create_order(
 
             await session.flush()
         await session.refresh(new_order)
-
-        # Schedule email sending
-        tasks.add_task(asyncio.create_task, send_mail(new_order.id))
-        logger.info("Email scheduled to be sent")
 
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Error saving order data to DB: {str(e)}")
