@@ -1,10 +1,8 @@
 import os
-from typing import List
 
 import pika
 import logging
 from dotenv import load_dotenv
-from pydantic import BaseModel
 
 load_dotenv()
 

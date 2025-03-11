@@ -12,9 +12,8 @@ from fastapi import (
 )
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin, ModelView
-from sqlalchemy import select, Select
+from sqlalchemy import select
 from starlette.requests import Request
-from sqlalchemy.orm import contains_eager
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -88,6 +87,7 @@ app = FastAPI(lifespan=lifespan)
 admin = Admin(app, engine, session_maker=SessionLocal)
 
 
+# Init admin views in main module to avoid circular imports
 class OrderAdmin(ModelView, model=OrderModel):
     is_async = True
     name_plural = "Orders"
