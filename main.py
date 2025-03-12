@@ -6,10 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Union
 from tools.helpers import generate_items, decimal_default
 
-from fastapi import (
-    FastAPI, BackgroundTasks,
-    Header, Depends, Response
-)
+from fastapi import FastAPI, Header, Depends, Response
 from auth import authentication_backend
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin, ModelView
@@ -23,14 +20,14 @@ import config
 from schemas import ItemSchema
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("reseller")
 
 engine = create_async_engine(config.get_db_url(), echo=True)
 SessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False
+    bind=engine, class_=AsyncSession, expire_on_commit=False
 )
 
 
@@ -85,7 +82,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-admin = Admin(app, engine, session_maker=SessionLocal, authentication_backend=authentication_backend)
+admin = Admin(
+    app,
+    engine,
+    session_maker=SessionLocal,
+    authentication_backend=authentication_backend,
+)
 
 
 # Init admin views in main module to avoid circular imports
@@ -95,15 +97,15 @@ class OrderAdmin(ModelView, model=OrderModel):
     can_edit = True
     can_create = False
     can_delete = True
-    column_list = [
-        OrderModel.id, OrderModel.created_at,
-        OrderModel.user_id
-    ]
+    column_list = [OrderModel.id, OrderModel.created_at, OrderModel.user_id]
     column_searchable_list = [OrderModel.user_id]
     column_filters = [OrderModel.user_id]
 
     column_details_list = [
-        OrderModel.created_at, OrderModel.user_id, OrderModel.total_price, OrderModel.item_names
+        OrderModel.created_at,
+        OrderModel.user_id,
+        OrderModel.total_price,
+        OrderModel.item_names,
     ]
 
     column_labels = {
@@ -121,9 +123,7 @@ class ItemAdmin(ModelView, model=ItemModel):
     column_searchable_list = [ItemModel.name]
     column_filters = [ItemModel.name]
 
-    column_details_list = [
-        ItemModel.name, ItemModel.description, ItemModel.price
-    ]
+    column_details_list = [ItemModel.name, ItemModel.description, ItemModel.price]
 
     column_labels = {
         ItemModel.name: "Name",
@@ -132,38 +132,37 @@ class ItemAdmin(ModelView, model=ItemModel):
     }
 
     async def after_model_change(
-            self, data: dict, model: Any,
-            is_created: bool, request: Request) -> None:
-        """ Publish item updates to RabbitMQ """
+        self, data: dict, model: Any, is_created: bool, request: Request
+    ) -> None:
+        """Publish item updates to RabbitMQ"""
         message = {
-            'id': model.id,
-            'name': model.name,
-            'description': model.description or '',
-            'price': model.price
+            "id": model.id,
+            "name": model.name,
+            "description": model.description or "",
+            "price": model.price,
         }
 
         config.rabbit_channel.basic_publish(
-            exchange='reseller_exchange',
-            routing_key='item_updates',
-            body=json.dumps(message, default=decimal_default)
+            exchange="reseller_exchange",
+            routing_key="item_updates",
+            body=json.dumps(message, default=decimal_default),
         )
 
-    async def after_model_delete(
-            self, model: Any, request: Request) -> None:
-        """ Publish item deletion to RabbitMQ """
+    async def after_model_delete(self, model: Any, request: Request) -> None:
+        """Publish item deletion to RabbitMQ"""
         message = {
-            'channel': 'item_deletes',
-            'id': model.id,
-            'name': model.name,
-            'description': model.description or '',
-            'price': model.price,
-            'deleted': True
+            "channel": "item_deletes",
+            "id": model.id,
+            "name": model.name,
+            "description": model.description or "",
+            "price": model.price,
+            "deleted": True,
         }
 
         config.rabbit_channel.basic_publish(
-            exchange='reseller_exchange',
-            routing_key='item_deletes',
-            body=json.dumps(message)
+            exchange="reseller_exchange",
+            routing_key="item_deletes",
+            body=json.dumps(message),
         )
 
 
@@ -185,11 +184,16 @@ async def get_items(session: AsyncSession = Depends(get_session)):
     return [ItemSchema.model_validate(item[0]) for item in items]
 
 
+@app.get("/orders/", dependencies=[Depends(verify_api_key)])
+async def get_orders(session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(OrderModel))
+    orders = result.fetchall()
+    return [order[0] for order in orders]
+
+
 @app.post("/order/", dependencies=[Depends(verify_api_key)])
 async def create_order(
-        order_data: Dict[str, Any],
-        tasks: BackgroundTasks,
-        session: AsyncSession = Depends(get_session)
+    order_data: Dict[str, Any], session: AsyncSession = Depends(get_session)
 ):
     order_items_data: list = order_data.pop("order_items", [])
     if not order_items_data:
@@ -204,8 +208,7 @@ async def create_order(
 
             for item_data in order_items_data:
                 order_item = OrderItemModel(
-                    order_id=new_order.id,
-                    item_id=item_data["id"]
+                    order_id=new_order.id, item_id=item_data["id"]
                 )
                 session.add(order_item)
 
@@ -213,7 +216,9 @@ async def create_order(
         await session.refresh(new_order)
 
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Error saving order data to DB: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error saving order data to DB: {str(e)}"
+        )
     except Exception as e:
         logger.error(f"Error creating order: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error creating order: {str(e)}")
@@ -221,13 +226,7 @@ async def create_order(
     return Response(status_code=201, content=json.dumps({"order_id": new_order.id}))
 
 
-@app.get("/orders/", dependencies=[Depends(verify_api_key)])
-async def get_orders(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(OrderModel))
-    orders = result.fetchall()
-    return [order[0] for order in orders]
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_level="debug")
 
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True, log_level="debug")

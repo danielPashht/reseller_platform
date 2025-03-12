@@ -1,6 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, select, func
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    ForeignKey,
+    DateTime,
+    select,
+    func,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,7 +18,7 @@ Base = declarative_base()
 
 
 class OrderModel(Base):
-    __tablename__ = 'order'
+    __tablename__ = "order"
     created_at = Column(DateTime, default=datetime.utcnow)
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
@@ -18,7 +27,7 @@ class OrderModel(Base):
         "OrderItemModel",
         back_populates="order",
         cascade="all, delete-orphan",
-        lazy="joined"
+        lazy="joined",
     )
 
     @hybrid_property
@@ -39,7 +48,7 @@ class OrderModel(Base):
 
 
 class ItemModel(Base):
-    __tablename__ = 'item'
+    __tablename__ = "item"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     description = Column(String(255), nullable=True)
@@ -48,9 +57,11 @@ class ItemModel(Base):
 
 
 class OrderItemModel(Base):
-    __tablename__ = 'order_item'
+    __tablename__ = "order_item"
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey('order.id', ondelete="CASCADE"), nullable=False)
-    item_id = Column(Integer, ForeignKey('item.id'), nullable=False)
+    order_id = Column(
+        Integer, ForeignKey("order.id", ondelete="CASCADE"), nullable=False
+    )
+    item_id = Column(Integer, ForeignKey("item.id"), nullable=False)
     order = relationship("OrderModel", back_populates="order_items")
     item = relationship("ItemModel")
