@@ -121,6 +121,16 @@ class ItemAdmin(ModelView, model=ItemModel):
     column_searchable_list = [ItemModel.name]
     column_filters = [ItemModel.name]
 
+    column_details_list = [
+        ItemModel.name, ItemModel.description, ItemModel.price
+    ]
+
+    column_labels = {
+        ItemModel.name: "Name",
+        ItemModel.description: "Description",
+        ItemModel.price: "Price",
+    }
+
     async def after_model_change(
             self, data: dict, model: Any,
             is_created: bool, request: Request) -> None:
