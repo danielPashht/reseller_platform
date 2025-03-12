@@ -2,11 +2,11 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY ../requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY ../ .
 
 FROM python:3.11-slim
 
@@ -18,4 +18,4 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "core.main:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -3,7 +3,7 @@ from starlette.requests import Request
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
-import config
+from core import config
 
 
 SECRET_KEY = config.ADMIN_SECRET

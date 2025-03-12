@@ -52,7 +52,9 @@ services:
       - reseller_network
 
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: reseller_backend
     environment:
       RABBITMQ_HOST: reseller_rabbitmq
