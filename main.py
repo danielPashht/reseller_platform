@@ -10,6 +10,7 @@ from fastapi import (
     FastAPI, BackgroundTasks,
     Header, Depends, Response
 )
+from auth import authentication_backend
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin, ModelView
 from sqlalchemy import select
@@ -84,7 +85,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-admin = Admin(app, engine, session_maker=SessionLocal)
+admin = Admin(app, engine, session_maker=SessionLocal, authentication_backend=authentication_backend)
 
 
 # Init admin views in main module to avoid circular imports

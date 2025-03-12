@@ -8,6 +8,7 @@ load_dotenv()
 
 logger = logging.getLogger("reseller")
 TG_SECRET = os.getenv("TG_SECRET")
+ADMIN_SECRET = os.getenv("ADMIN_SECRET")
 
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", 5672))
