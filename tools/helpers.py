@@ -4,7 +4,7 @@ from decimal import Decimal
 
 def generate_items():
     # Use json file to generate items for db seed
-    with open("items.json", "r") as file:
+    with open("tools/items.json", "r") as file:
         items_data = json.load(file)
 
     items = []

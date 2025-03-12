@@ -1,13 +1,12 @@
-import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
 
-from typing import Any, AsyncGenerator, Dict, List, Union
+from typing import Any, AsyncGenerator, Dict
 from tools.helpers import generate_items, decimal_default
 
 from fastapi import FastAPI, Header, Depends, Response
-from auth import authentication_backend
+from core.auth import authentication_backend
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin, ModelView
 from sqlalchemy import select
@@ -15,9 +14,9 @@ from starlette.requests import Request
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from models import Base, OrderItemModel, OrderModel, ItemModel
-import config
-from schemas import ItemSchema
+from db.models import Base, OrderItemModel, OrderModel, ItemModel
+from core import config
+from schemas.schemas import ItemSchema
 
 
 logging.basicConfig(
