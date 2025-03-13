@@ -5,14 +5,14 @@ services:
     image: postgres:latest
     container_name: reseller_postgresql
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 946815
-      POSTGRES_DB: reseller
-      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PORT: ${DB_PORT}
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - /db/pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -25,11 +25,11 @@ services:
     image: rabbitmq:management
     container_name: reseller_rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
     ports:
-      - "5672:5672"    # AMQP port
-      - "15672:15672"  # Management UI port
+      - "5672:5672"
+      - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
@@ -57,13 +57,14 @@ services:
       dockerfile: docker/Dockerfile
     container_name: reseller_backend
     environment:
-      RABBITMQ_HOST: reseller_rabbitmq
-      RABBITMQ_PORT: 5672
-      DB_HOST: reseller_postgresql
-      DB_USER: postgres
-      DB_PASSWORD: 946815
-      DB_PORT: 5432
-      DB_NAME: reseller
+      RABBITMQ_HOST: ${RABBIT_HOST}
+      RABBITMQ_PORT: ${RABBIT_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      ADMIN_SECRET: ${ADMIN_SECRET}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -85,8 +86,8 @@ services:
       dockerfile: Dockerfile
     container_name: reseller_bot
     environment:
-      RABBITMQ_HOST: reseller_rabbitmq
-      RABBITMQ_PORT: 5672
+      RABBITMQ_HOST: ${RABBIT_HOST}
+      RABBITMQ_PORT: ${RABBIT_PORT}
       REDIS_HOST: reseller_redis
     depends_on:
       rabbitmq:

@@ -1,13 +1,11 @@
-# TODO: rewrite 
-
 # Telegram Bot Shop
 
-A lightweight Telegram bot for order processing using Aiogram, FastAPI, Celery, Redis, and PostgreSQL.
+A lightweight Telegram bot for order processing using Aiogram, FastAPI, Redis, RabbitMQ and PostgreSQL.
 
 ## Features
 - Accepts orders via Telegram bot
 - Stores orders in PostgreSQL via FastAPI
-- Processes orders asynchronously with Celery
+- Processes orders asynchronously with Redis
 - Sends notifications to users on order updates
 - Admin panel for managing orders
 
@@ -15,8 +13,8 @@ A lightweight Telegram bot for order processing using Aiogram, FastAPI, Celery, 
 - **Bot:** Aiogram (Python)
 - **API:** FastAPI + SQLAdmin 
 - **Database:** PostgreSQL
-- **Task Queue:** Celery
-- **Message Broker:** Redis
+- **Message Broker:** RabbitMQ
+- **Cache:** Redis
 
 ## Installation
 ### 1. Clone the Repository
@@ -26,12 +24,19 @@ cd reseller_backend
 ```
 
 ### 2. Set Up Environment Variables
-Create a `.env` file and add:
+Create a `.env` file and add following environment variables:
 ```
-BOT_TOKEN=your_telegram_bot_token
-API_KEY=your_api_key
-DB_URL=postgresql+asyncph://user:password@localhost/dbname
-REDIS_URL=redis://localhost:6379
+TG_SECRET, ADMIN_SECRET
+DB_USER
+DB_PASSWORD
+DB_HOST
+DB_PORT
+DB_NAME
+
+RABBIT_USER
+RABBIT_PASSWORD
+RABBIT_HOST
+RABBIT_PORT
 ```
 
 ### 3. Install Dependencies
@@ -40,21 +45,15 @@ pip install -r requirements.txt
 ```
 
 ### 4. Start Services
-- **Run Redis:** `docker run -d -p 6379:6379 redis`
-- **Run Postgresql:** `docker run -d -p 3306:3306 -e POSTGRESQL_PASSWORD=root postgres`
-- **Run Celery Worker:** `celery -A tasks worker --loglevel=info`
-- **Run FastAPI:** `uvicorn main:app --reload`
-- **Run Telegram Bot:** `python bot.py`
+- Use docker compose to run all services, provide .env for it:
+- From /docker: `docker-compose --env-file ../.env up`
 
 ## API Endpoints
-| Method | Endpoint | Description |
-|--------|---------|-------------|
-| `POST` | `/orders/` | Create an order |
-| `PUT` | `/orders/{order_id}` | Update order status |
+| Method | Endpoint           | Description |
+|--------|--------------------|-------------|
+| `GET`  | `/items/`          | Get all items |
+| `GET`  | `/orders/` | Get all orders |
+| `POST` | `/orders/` | Create a new order |
 
-## Order Flow
-1. User places an order via Telegram bot.
-2. FastAPI stores the order in MySQL.
-3. Celery processes the order in the background.
-4. Admin updates order status.
-5. User gets notified in Telegram via Redis Pub/Sub or direct API call.
+For requests provide header: `x-api-key: ADMIN_SECRET`
+
