@@ -37,6 +37,9 @@ def test_read_orders():
 
 
 def test_forbidden_access_to_api():
+    client.headers["x-api-key"] = "wrong"
+    response = client.get("/items/")
+    check_status_code(response, 403)
     client.headers.clear()
     response = client.get("/orders/")
     check_status_code(response, 403)

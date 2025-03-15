@@ -19,7 +19,7 @@ A lightweight Telegram bot for order processing using Aiogram, FastAPI, Redis, R
 ## Installation
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-repo/shop_bot.git
+git clone https://github.com/danielPashht/reseller_bot
 cd reseller_backend
 ```
 
@@ -33,10 +33,10 @@ DB_HOST
 DB_PORT
 DB_NAME
 
-RABBIT_USER
-RABBIT_PASSWORD
-RABBIT_HOST
-RABBIT_PORT
+RABBITMQ_USER
+RABBITMQ_PASSWORD
+RABBITMQ_HOST
+RABBITMQ_PORT
 ```
 
 ### 3. Install Dependencies
