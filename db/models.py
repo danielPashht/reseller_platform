@@ -22,6 +22,7 @@ class OrderModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
+    username = Column(String(255), nullable=True)
     total_price = Column(Float, nullable=False)
     order_items = relationship(
         "OrderItemModel",

@@ -24,6 +24,7 @@ class OrderItemSchema(BaseModel):
 
 class OrderSchema(BaseModel):
     id: int | None = None
+    username: str | None = None
     user_id: int
     total_price: float
     order_items: List[OrderItemSchema]
