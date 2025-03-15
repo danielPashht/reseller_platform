@@ -102,7 +102,7 @@ class OrderAdmin(ModelView, model=OrderModel):
 
     column_details_list = [
         OrderModel.created_at,
-        OrderModel.user_id,
+        OrderModel.username,
         OrderModel.total_price,
         OrderModel.item_names,
     ]
@@ -110,8 +110,8 @@ class OrderAdmin(ModelView, model=OrderModel):
     column_labels = {
         OrderModel.created_at: "Created At",
         OrderModel.item_names: "Items",
-        OrderModel.user_id: "Telegram User ID",
         OrderModel.total_price: "Total Price",
+        OrderModel.username: "Telegram Username",
     }
 
 
@@ -201,7 +201,6 @@ async def create_order(
     try:
         async with session.begin():
             new_order = OrderModel(**order_data)
-
             session.add(new_order)
             await session.flush()
 
