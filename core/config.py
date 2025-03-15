@@ -1,6 +1,7 @@
 import os
 
 import pika
+from pika.exceptions import AMQPConnectionError
 import logging
 from dotenv import load_dotenv
 

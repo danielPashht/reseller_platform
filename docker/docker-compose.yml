@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_PORT: ${DB_PORT}
     volumes:
-      - /db/pgdata:/var/lib/postgresql/data
+      - ~/db/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
       interval: 10s
@@ -25,8 +25,8 @@ services:
     image: rabbitmq:management
     container_name: reseller_rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -56,9 +56,11 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: reseller_backend
+    env_file:
+      - ../.env
     environment:
-      RABBITMQ_HOST: ${RABBIT_HOST}
-      RABBITMQ_PORT: ${RABBIT_PORT}
+      RABBITMQ_HOST: reseller_rabbitmq
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
       DB_HOST: ${DB_HOST}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -86,9 +88,14 @@ services:
       dockerfile: Dockerfile
     container_name: reseller_bot
     environment:
-      RABBITMQ_HOST: ${RABBIT_HOST}
-      RABBITMQ_PORT: ${RABBIT_PORT}
+      RABBITMQ_HOST: reseller_rabbitmq
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
       REDIS_HOST: reseller_redis
+      REDIS_PORT: ${REDIS_PORT}
+      ADMIN_API_URL: ${ADMIN_API_URL}
+      BOT_TOKEN: ${BOT_TOKEN}
+      ADMIN_API_KEY: ${TG_SECRET}
+      MANAGER_USER_ID: ${MANAGER_USER_ID}
     depends_on:
       rabbitmq:
         condition: service_healthy
