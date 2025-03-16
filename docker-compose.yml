@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_PORT: ${DB_PORT}
     volumes:
-      - ../db/pgdata:/var/lib/postgresql/data
+      - .bot/db/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
       interval: 10s
@@ -51,13 +51,13 @@ services:
     networks:
       - reseller_network
 
-  app:
+  web:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: web/Dockerfile
     container_name: reseller_backend
     env_file:
-      - ../.env
+      - .env
     environment:
       RABBITMQ_HOST: reseller_rabbitmq
       RABBITMQ_PORT: ${RABBITMQ_PORT}
@@ -84,8 +84,8 @@ services:
 
   bot:
     build:
-      context: /Users/daniel/Documents/code/aiogram_bot
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: bot/Dockerfile
     container_name: reseller_bot
     environment:
       RABBITMQ_HOST: reseller_rabbitmq
@@ -101,7 +101,7 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      app:
+      web:
         condition: service_healthy
       redis:
         condition: service_healthy
