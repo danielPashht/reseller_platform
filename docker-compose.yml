@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_PORT: ${DB_PORT}
     volumes:
-      - bot/db/pgdata:/var/lib/postgresql/data
+      - /bot/db/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
       interval: 10s
