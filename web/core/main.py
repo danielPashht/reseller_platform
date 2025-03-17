@@ -227,4 +227,6 @@ async def create_order(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:modules", host="0.0.0.0", port=8080, reload=True, log_level="debug")
+    uvicorn.run(
+        "main:modules", host="0.0.0.0", port=8080, reload=True, log_level="debug"
+    )

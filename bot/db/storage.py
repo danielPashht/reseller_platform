@@ -28,6 +28,7 @@ class DataStorage:
         rabbit_client: The RabbitMQ client instance for interacting with RabbitMQ.
         consumer_thread (threading.Thread): Thread, that starts rabbit consumer.
     """
+
     ITEM_QUEUE = "item_queue"
 
     def __init__(self):
@@ -68,7 +69,8 @@ class DataStorage:
             with self._items_lock:
                 existing_item_index = next(
                     (
-                        i for i, item in enumerate(self._items)
+                        i
+                        for i, item in enumerate(self._items)
                         if item["id"] == new_item["id"]
                     ),
                     None,
@@ -245,7 +247,8 @@ class DataStorage:
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
-    async def _calculate_total_pages(self, items: List[Dict]):
+    @staticmethod
+    async def calculate_total_pages(items: List[Dict]):
         """
         Calculates the total number of pages for items.
         """

@@ -96,7 +96,7 @@ def create_router(data_storage, bot: Bot):
         current_page = 0
         items = await data_storage.get_all_items()
         keyboard = get_catalog_keyboard(current_page, items=items)
-        total_pages = await data_storage._calculate_total_pages(items)
+        total_pages = await data_storage.calculate_total_pages(items)
         catalog_message_text = (
             f"🌟 Наши услуги 🌟\n\n"
             "Выберите услугу или используйте кнопки для навигации.\n\n"
@@ -130,7 +130,7 @@ def create_router(data_storage, bot: Bot):
             current_page = 0  # Return to first page
         items = await data_storage.get_all_items()
         keyboard = get_catalog_keyboard(current_page, items=items)
-        total_pages = await data_storage._calculate_total_pages(items)
+        total_pages = await data_storage.calculate_total_pages(items)
         catalog_text = (
             f"🌟 Каталог услуг 🌟\n\n(Страница {current_page + 1} из {total_pages})"
         )
@@ -239,7 +239,12 @@ def create_router(data_storage, bot: Bot):
         username = order_data.get("username")
 
         try:
-            Order(user_id=user_id, items=cart_items, total_price=total_price, username=username)
+            Order(
+                user_id=user_id,
+                items=cart_items,
+                total_price=total_price,
+                username=username,
+            )
         except ValidationError as exc:
             logger.error(f"Order validation failed: {exc}")
             raise exc

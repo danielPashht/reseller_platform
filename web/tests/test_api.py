@@ -8,8 +8,9 @@ client.headers.update({"x-api-key": ADMIN_SECRET})
 
 
 def check_status_code(response, expected_status_code):
-    assert response.status_code == expected_status_code, \
+    assert response.status_code == expected_status_code, (
         f"Incorrect status code: {response.status_code}, expected {expected_status_code}"
+    )
 
 
 def test_read_items():
@@ -19,11 +20,7 @@ def test_read_items():
 
 
 def test_create_order():
-    order_data = {
-        "order_items": [{"id": 1}],
-        "user_id": 123,
-        "total_price": 100.0
-    }
+    order_data = {"order_items": [{"id": 1}], "user_id": 123, "total_price": 100.0}
     response = client.post("/order/", json=order_data)
     check_status_code(response, 201)
     assert "order_id" in response.json()
