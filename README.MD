@@ -61,3 +61,9 @@ pip install -r requirements.txt
 | `POST` | `/orders/` | Create a new order |
 
 For requests provide header: `x-api-key: ADMIN_SECRET`
+
+## TODO:
+- Add more tests
+- Save logs to file
+- Add more features to admin panel
+- Order status and notifications?
