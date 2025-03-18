@@ -1,10 +1,12 @@
 import json
+import os
 from decimal import Decimal
 
 
 def generate_items():
     # Use json file to generate items for db seed
-    with open("db/items.json", "r") as file:
+    file_path = os.path.join(os.path.dirname(__file__), "items.json")
+    with open(file_path, "r") as file:
         items_data = json.load(file)
 
     items = []

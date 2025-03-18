@@ -1,5 +1,4 @@
-import config
-
+from web.core import config
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from jose import JWTError, jwt

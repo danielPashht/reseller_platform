@@ -3,7 +3,7 @@ import httpx
 import asyncio
 import logging
 import threading
-from schemas import ItemDeleteMessage, ItemUpdateMessage
+from bot.db.schemas import ItemDeleteMessage, ItemUpdateMessage
 from bot.config import ADMIN_API_URL, ADMIN_API_KEY, redis_client, rabbitmq_client
 import json
 from pydantic import ValidationError
@@ -28,7 +28,6 @@ class DataStorage:
         rabbit_client: The RabbitMQ client instance for interacting with RabbitMQ.
         consumer_thread (threading.Thread): Thread, that starts rabbit consumer.
     """
-
     ITEM_QUEUE = "item_queue"
 
     def __init__(self):
@@ -44,7 +43,7 @@ class DataStorage:
         self.consumer_thread.start()
 
     async def fetch_items(self):
-        """Used on modules start to fetch items from backend and store them to redis"""
+        """Used on app start to fetch items from backend and store them to redis"""
         headers = {"X-API-Key": ADMIN_API_KEY}
         async with httpx.AsyncClient() as client:
             try:
@@ -69,8 +68,7 @@ class DataStorage:
             with self._items_lock:
                 existing_item_index = next(
                     (
-                        i
-                        for i, item in enumerate(self._items)
+                        i for i, item in enumerate(self._items)
                         if item["id"] == new_item["id"]
                     ),
                     None,
@@ -80,9 +78,6 @@ class DataStorage:
                 else:
                     self._items.append(new_item)
             logger.info(f"Updated item {new_item['id']} in Redis and local cache")
-
-        except Exception as e:
-            logger.error(f"Error in store_item: {e}")
 
         except Exception as e:
             logger.error(f"Error in store_item: {e}")
@@ -147,7 +142,8 @@ class DataStorage:
         except Exception as e:
             logger.error(f"Error in store_items_in_redis: {e}")
 
-    def _get_item_key(self, item_id: int) -> str:
+    @staticmethod
+    def _get_item_key(item_id: int) -> str:
         return f"item:{item_id}"
 
     def set_item_consumption(self):

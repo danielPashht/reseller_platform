@@ -6,7 +6,7 @@ from typing import Any, AsyncGenerator, Dict
 from web.tools.helpers import generate_items, decimal_default
 
 from fastapi import FastAPI, Header, Depends, Response
-from web.core.auth import authentication_backend
+from web.core.admin_auth import authentication_backend
 from fastapi.exceptions import HTTPException
 from sqladmin import Admin, ModelView
 from sqlalchemy import select
@@ -228,5 +228,5 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "main:modules", host="0.0.0.0", port=8080, reload=True, log_level="debug"
+        app, host="0.0.0.0", port=8080, reload=True, log_level="debug"
     )

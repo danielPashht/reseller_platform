@@ -18,7 +18,7 @@ ADMIN_API_URL = os.getenv("ADMIN_API_URL")
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
 
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
-RABBITMQ_PORT = os.getenv("RABBIT_PORT")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT")
 
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = os.getenv("REDIS_PORT")
@@ -36,7 +36,7 @@ class RabbitMQClient:
     def connect(self):
         try:
             self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT)
+                pika.ConnectionParameters(host=RABBITMQ_HOST, port=int(RABBITMQ_PORT))
             )
             self.channel = self.connection.channel()
             # Ensure exchange exists (idempotent)
