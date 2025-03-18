@@ -3,11 +3,12 @@
 Shop based on Telegram bot, made for async order processing, with admin panel for managing orders and items.
 
 ## Features
-- Accepts orders via Telegram bot
-- Stores orders in PostgreSQL via FastAPI
-- Processes orders asynchronously with Redis
-- Sends notifications to users on order updates
-- Admin panel for managing orders
+- Add catalog items to the shop using web admin panel
+- Accepts orders from users via Telegram bot
+- Processes orders and user sessions asynchronously with Redis
+- Sends notifications to manager and users on order updates
+- Admin panel for managing orders and items
+- Asynchronous update of items in the shop using RabbitMQ
 
 ## Tech Stack
 - **Bot:** Aiogram
@@ -60,4 +61,3 @@ pip install -r requirements.txt
 | `POST` | `/orders/` | Create a new order |
 
 For requests provide header: `x-api-key: ADMIN_SECRET`
-
