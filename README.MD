@@ -1,6 +1,6 @@
 # Telegram Bot Shop
 
-A lightweight Telegram bot for order processing using Aiogram, FastAPI, Redis, RabbitMQ and PostgreSQL.
+Shop based on Telegram bot, made for async order processing, with admin panel for managing orders and items.
 
 ## Features
 - Accepts orders via Telegram bot
@@ -10,23 +10,24 @@ A lightweight Telegram bot for order processing using Aiogram, FastAPI, Redis, R
 - Admin panel for managing orders
 
 ## Tech Stack
-- **Bot:** Aiogram (Python)
-- **API:** FastAPI + SQLAdmin 
-- **Database:** PostgreSQL
-- **Message Broker:** RabbitMQ
-- **Cache:** Redis
+- **Bot:** Aiogram
+- **API:** FastAPI + SQLAdmin for managing orders and items
+- **Database:** PostgreSQL, stores orders and items
+- **Message Broker:** RabbitMQ, for asynchronous processing of orders and item updates
+- **Cache:** Redis, for storing user sessions
 
 ## Installation
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/danielPashht/reseller_bot
-cd reseller_backend
+open repo in IDE or terminal
 ```
 
 ### 2. Set Up Environment Variables
-Create a `.env` file and add following environment variables:
+Create a `.env` in root file and add following environment variables:
 ```
-TG_SECRET, ADMIN_SECRET
+TG_SECRET - used by bot to authenticate requests in backend
+ADMIN_SECRET - used by admin panel to authenticate admin user
 DB_USER
 DB_PASSWORD
 DB_HOST
@@ -37,6 +38,9 @@ RABBITMQ_USER
 RABBITMQ_PASSWORD
 RABBITMQ_HOST
 RABBITMQ_PORT
+BOT_TOKEN - telegram bot token from BotFather
+ADMIN_API_URL - url to admin panel, for example: http://reseller_backend:8000
+MANAGER_USER_ID - telegram userid of manager to receive notifications 
 ```
 
 ### 3. Install Dependencies
@@ -46,7 +50,7 @@ pip install -r requirements.txt
 
 ### 4. Start Services
 - Use docker compose to run all services, provide .env for it:
-- From /docker: `docker-compose --env-file ../.env up`
+- From /docker: `docker-compose --env-file=.env up`
 
 ## API Endpoints
 | Method | Endpoint           | Description |
